@@ -68,9 +68,12 @@ public:
 
     bool canPreventScreenCapture() const override;
     bool setPreventScreenCapture(QWindow* window, bool prevent) const override;
+    void setTabSwitchingEnabled(bool enabled);
 
 signals:
     void userSwitched();
+    void showNextTab();
+    void showPreviousTab();
 
 protected:
     explicit MacUtils(QObject* parent = nullptr);

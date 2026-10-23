@@ -175,6 +175,14 @@
         <source>Bring All to Front</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Show Previous Tab</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Next Tab</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ApplicationSettingsWidget</name>

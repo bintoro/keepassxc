@@ -29,6 +29,7 @@
 - (id) initWithObject:(AppKit*)appkit;
 
 @property (strong) NSRunningApplication *lastActiveApplication;
+@property bool tabSwitchingEnabled;
 
 - (pid_t) activeProcessId;
 - (pid_t) ownProcessId;

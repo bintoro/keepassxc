@@ -27,6 +27,11 @@
 
 @implementation AppKitImpl
 
+enum NativeMenuAction {
+    ShowNextTab = 1,
+    ShowPreviousTab = 2,
+};
+
 - (id) initWithObject:(AppKit*)appkit
 {
     self = [super init];
@@ -44,6 +49,8 @@
                                                                 object:nil];
 
         [NSApp addObserver:self forKeyPath:@"effectiveAppearance" options:NSKeyValueObservingOptionNew context:nil];
+
+        self.tabSwitchingEnabled = false;
     }
     return self;
 }
@@ -246,11 +253,48 @@
     QString bringAllToFrontStr = AppKit::tr("Bring All to Front");
     [nsWindowMenu addItemWithTitle:bringAllToFrontStr.toNSString() action:@selector(arrangeInFront:) keyEquivalent:@""];
 
+    [nsWindowMenu addItem:[NSMenuItem separatorItem]];
+    NSString *tabKey = [NSString stringWithFormat:@"%C", static_cast<unichar>(NSTabCharacter)];
+    QString prevTabStr = AppKit::tr("Show Previous Tab");
+    NSMenuItem *prevTabMenuItem = [nsWindowMenu addItemWithTitle:prevTabStr.toNSString()
+                                                          action:@selector(dispatchMenuAction:)
+                                                   keyEquivalent:tabKey];
+    prevTabMenuItem.keyEquivalentModifierMask = NSEventModifierFlagShift | NSEventModifierFlagControl;
+    prevTabMenuItem.target = self;
+    prevTabMenuItem.tag = NativeMenuAction::ShowPreviousTab;
+    QString nextTabStr = AppKit::tr("Show Next Tab");
+    NSMenuItem *nextTabMenuItem = [nsWindowMenu addItemWithTitle:nextTabStr.toNSString()
+                                                          action:@selector(dispatchMenuAction:)
+                                                   keyEquivalent:tabKey];
+    nextTabMenuItem.keyEquivalentModifierMask = NSEventModifierFlagControl;
+    nextTabMenuItem.target = self;
+    nextTabMenuItem.tag = NativeMenuAction::ShowNextTab;
+
     NSApp.windowsMenu = nsWindowMenu;
 
     mainWindow->menuBar()->insertMenu(helpMenu->menuAction(), qtWindowMenu);
 
     NSApp.helpMenu = helpMenu->toNSMenu();
+}
+
+- (void) dispatchMenuAction:(NSMenuItem*) sender
+{
+    switch (sender.tag) {
+        case NativeMenuAction::ShowNextTab:
+            emit m_appkit->showNextTab();
+            break;
+        case NativeMenuAction::ShowPreviousTab:
+            emit m_appkit->showPreviousTab();
+            break;
+    }
+}
+
+- (BOOL) validateMenuItem:(NSMenuItem*) item {
+    if ((item.tag == NativeMenuAction::ShowNextTab || item.tag == NativeMenuAction::ShowPreviousTab)
+        && !self.tabSwitchingEnabled) {
+        return NO;
+    }
+    return YES;
 }
 
 @end
@@ -339,4 +383,9 @@ void AppKit::setWindowSecurity(QWindow* window, bool state)
 void AppKit::configureWindowAndHelpMenus(QMainWindow* window, QMenu* helpMenu)
 {
     [static_cast<id>(self) configureWindowAndHelpMenus:window helpMenu:helpMenu];
+}
+
+void AppKit::setTabSwitchingEnabled(bool enabled)
+{
+    [static_cast<id>(self) setTabSwitchingEnabled:enabled];
 }

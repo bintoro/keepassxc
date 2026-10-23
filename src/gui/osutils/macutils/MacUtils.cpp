@@ -47,6 +47,8 @@ MacUtils::MacUtils(QObject* parent)
         // if we call it too fast after a theme change.
         QTimer::singleShot(100, [this]() { emit statusbarThemeChanged(); });
     });
+    connect(m_appkit.data(), SIGNAL(showNextTab()), SIGNAL(showNextTab()));
+    connect(m_appkit.data(), SIGNAL(showPreviousTab()), SIGNAL(showPreviousTab()));
 }
 
 MacUtils::~MacUtils()
@@ -193,6 +195,11 @@ bool MacUtils::setPreventScreenCapture(QWindow* window, bool prevent) const
         m_appkit->setWindowSecurity(window, prevent);
     }
     return true;
+}
+
+void MacUtils::setTabSwitchingEnabled(bool enabled)
+{
+    m_appkit->setTabSwitchingEnabled(enabled);
 }
 
 void MacUtils::registerNativeEventFilter()

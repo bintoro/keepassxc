@@ -48,10 +48,13 @@ public:
     void toggleForegroundApp(bool foreground);
     void setWindowSecurity(QWindow* window, bool state);
     void configureWindowAndHelpMenus(QMainWindow* mainWindow, QMenu* helpMenu);
+    void setTabSwitchingEnabled(bool enabled);
 
 signals:
     void userSwitched();
     void interfaceThemeChanged();
+    void showNextTab();
+    void showPreviousTab();
 
 private:
     void* self;

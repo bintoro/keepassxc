@@ -285,15 +285,17 @@ MainWindow::MainWindow()
     // Control window state
     new QShortcut(Qt::CTRL | Qt::Key_M, this, SLOT(minimizeOrHide()));
     new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_M, this, SLOT(hideWindow()));
+
     // Control database tabs
-    // Ctrl+Tab is broken on Mac, so use Alt (i.e. the Option key) - https://bugreports.qt.io/browse/QTBUG-8596
-    auto dbTabModifier2 = Qt::CTRL;
 #ifdef Q_OS_MACOS
-    dbTabModifier2 = Qt::ALT;
+    // On Mac, Ctrl+Tab is captured via a native shortcut - https://qt-project.atlassian.net/browse/QTBUG-8596
+    connect(macUtils(), &MacUtils::showNextTab, this, &MainWindow::selectNextDatabaseTab);
+    connect(macUtils(), &MacUtils::showPreviousTab, this, &MainWindow::selectPreviousDatabaseTab);
+#else
+    new QShortcut(Qt::CTRL | Qt::Key_Tab, this, SLOT(selectNextDatabaseTab()));
+    new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Tab, this, SLOT(selectPreviousDatabaseTab()));
 #endif
-    new QShortcut(dbTabModifier2 | Qt::Key_Tab, this, SLOT(selectNextDatabaseTab()));
     new QShortcut(Qt::CTRL | Qt::Key_PageDown, this, SLOT(selectNextDatabaseTab()));
-    new QShortcut(dbTabModifier2 | Qt::SHIFT | Qt::Key_Tab, this, SLOT(selectPreviousDatabaseTab()));
     new QShortcut(Qt::CTRL | Qt::Key_PageUp, this, SLOT(selectPreviousDatabaseTab()));
 
     // Tab selection by number, Windows uses Ctrl, macOS uses Command,
@@ -434,6 +436,7 @@ MainWindow::MainWindow()
     connect(m_ui->tabWidget, SIGNAL(currentChanged(int)), SLOT(updateWindowTitle()));
     connect(m_ui->tabWidget, SIGNAL(currentChanged(int)), SLOT(databaseTabChanged(int)));
     connect(m_ui->tabWidget, SIGNAL(currentChanged(int)), SLOT(updateMenuActionState()));
+    connect(m_ui->tabWidget, SIGNAL(databaseClosed(QString)), SLOT(updateMenuActionState()));
     connect(m_ui->tabWidget, SIGNAL(databaseLocked(DatabaseWidget*)), SLOT(databaseStatusChanged(DatabaseWidget*)));
     connect(m_ui->tabWidget, SIGNAL(databaseUnlocked(DatabaseWidget*)), SLOT(databaseStatusChanged(DatabaseWidget*)));
     connect(m_ui->tabWidget, SIGNAL(tabVisibilityChanged(bool)), SLOT(updateToolbarSeparatorVisibility()));
@@ -1007,6 +1010,10 @@ void MainWindow::updateMenuActionState()
 #endif
 
     m_searchWidgetAction->setEnabled(inDatabase);
+
+#ifdef Q_OS_MACOS
+    macUtils()->setTabSwitchingEnabled(dbWidget && m_ui->tabWidget->count() > 1);
+#endif
 }
 
 void MainWindow::updateToolbarSeparatorVisibility()
