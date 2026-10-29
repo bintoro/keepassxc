@@ -90,9 +90,8 @@ EntryView::EntryView(QWidget* parent)
     setDefaultDropAction(Qt::MoveAction);
 
     connect(this, SIGNAL(doubleClicked(QModelIndex)), SLOT(emitEntryActivated(QModelIndex)));
-    connect(selectionModel(), &QItemSelectionModel::selectionChanged, this, [this] {
-        emit entrySelectionChanged(currentEntry());
-    });
+    connect(selectionModel(), &QItemSelectionModel::currentChanged, this, &EntryView::onCurrentChanged);
+    connect(selectionModel(), &QItemSelectionModel::selectionChanged, this, &EntryView::onSelectionChanged);
 
     new QShortcut(Qt::CTRL | Qt::Key_F10, this, SLOT(contextMenuShortcutPressed()), nullptr, Qt::WidgetShortcut);
     new QShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_J, this, SLOT(jumpToGroupShortcut()), nullptr, Qt::WidgetShortcut);
@@ -184,6 +183,10 @@ void EntryView::keyPressEvent(QKeyEvent* event)
 #endif
     }
 
+    if (event->matches(QKeySequence::Copy)) {
+        return;
+    }
+    
     int last = m_model->rowCount() - 1;
     if (last > 0) {
         QAccessibleEvent accessibleEvent(this, QAccessible::PageChanged);
@@ -321,6 +324,36 @@ int EntryView::currentEntryIndex()
     } else {
         return -1;
     }
+}
+
+void EntryView::onCurrentChanged(const QModelIndex &current)
+{
+    if (!current.isValid()) {
+        return;
+    }
+    // Clamp focus to the Title column so that column-dependent actions
+    // such as type-to-search and activation via Enter work predictably.
+    if (current.column() != 1) {
+        selectionModel()->setCurrentIndex(current.siblingAtColumn(1), QItemSelectionModel::NoUpdate);
+    }
+    // Enable allColumnsShowFocus when the focus rectangle should be visible. The setting cannot be always
+    // on because BaseStyle::drawPrimitive() would then be unable to omit the element when it’s not needed.
+    if (numberOfSelectedEntries() == 1 && selectionModel()->rowIntersectsSelection(current.row())) {
+        setAllColumnsShowFocus(false);
+    } else {
+        setAllColumnsShowFocus(true);
+    }
+}
+
+void EntryView::onSelectionChanged(const QItemSelection &selected)
+{
+    Q_UNUSED(selected);
+
+    emit entrySelectionChanged(currentEntry());
+
+    // Ensure onCurrentChanged() is called after the selection has been updated
+    // so that it can determine whether to display the focus rectangle.
+    onCurrentChanged(selectionModel()->currentIndex());
 }
 
 /**

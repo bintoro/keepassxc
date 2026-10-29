@@ -65,6 +65,8 @@ protected:
 
 private slots:
     void emitEntryActivated(const QModelIndex& index);
+    void onCurrentChanged(const QModelIndex &current);
+    void onSelectionChanged(const QItemSelection &selected);
     void showHeaderMenu(const QPoint& position);
     void toggleColumnVisibility(QAction* action);
     void fitColumnsToWindow();
